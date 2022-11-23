@@ -1,4 +1,4 @@
-# Welcome to the FinalProject wiki!
+# Welcome to the FinalProject!
 
 
 ## The goal of our application is to facilitate the search for a partner in sport !
