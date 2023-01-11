@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "381485081060-kdbt9b24hdgel42ri34kgtjl917gcv9o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.app_sport",
+            "certificate_hash": "08a089f2e3f6dc614cb30c3887fa7cde281f8b96"
+          }
+        },
+        {
           "client_id": "381485081060-r2oqlnm4mjpp4sks62178bmkitumi56i.apps.googleusercontent.com",
           "client_type": 3
         }

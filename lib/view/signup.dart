@@ -1,11 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:provider/provider.dart';
 import '../model/user_model.dart';
 import '../utils/global_colors.dart';
+import 'google_sign_in.dart';
 import 'login_screen.dart';
 class SignUp extends StatefulWidget {
   const SignUp({Key? key}) : super(key: key);
@@ -239,7 +242,9 @@ class _SignUpState extends State<SignUp> {
                                         child :  InkWell(
                                           onTap: (){
                                             if(index==0){
-
+                                              final provider = Provider.of<GoogleSignInProvider>(context,listen : false);
+                                              provider.googleLogin();
+                                              //  signInWithGoogle();
                                             }
                                           },
                                           child: CircleAvatar(
@@ -279,6 +284,43 @@ class _SignUpState extends State<SignUp> {
       });
     }
   }
+  Future <void> signInWithGoogle() async{
+    final GoogleSignInAccount? _googleUser = await GoogleSignIn().signIn();
+    final GoogleSignInAuthentication? _googleAuth = await _googleUser?.authentication;
+    final credential = GoogleAuthProvider.credential(accessToken: _googleAuth?.accessToken,
+      idToken: _googleAuth?.idToken,
+    );
+    try {
+
+       await _auth.signInWithCredential(credential).then((value) => { postDetailsFireStoreForGoogle(_googleUser)});
+
+    }
+    on FirebaseAuthException catch (error){
+       print(error);
+    }
+
+
+
+  }
+
+  postDetailsFireStoreForGoogle(GoogleSignInAccount? _googleUser) async {
+    FirebaseFirestore firebaseFirestore = FirebaseFirestore.instance;
+    UserModel userModel = UserModel();
+    User? user = _auth.currentUser;
+
+
+    userModel.email =_googleUser!.email;
+    userModel.uid = user!.uid;
+    await firebaseFirestore
+        .collection("users")
+        .doc(user.uid)
+        .set(userModel.toMap());
+
+    Fluttertoast.showToast(msg: "The account has been successfully created :)");
+    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context)=>LoginScreen()), (route) => false);
+
+  }
+
   postDetailsToFireStore() async {
     //calling our firebase
     // calling our user model;

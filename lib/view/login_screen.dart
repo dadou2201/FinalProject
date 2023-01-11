@@ -1,9 +1,13 @@
 
+import 'package:app_sport/view/google_sign_in.dart';
+import 'package:app_sport/view/homescreen.dart';
 import 'package:app_sport/view/signup.dart';
 import 'package:app_sport/view/splash_view1.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart' ;
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:provider/provider.dart';
 
 import '../model/user_model.dart';
 import '../utils/global_colors.dart';
@@ -138,6 +142,13 @@ class _LoginScreenState extends State<LoginScreen> {
         child : Text("Se connecter", textAlign: TextAlign.center,style:TextStyle(fontSize: 20,color: Colors.white,fontWeight: FontWeight.bold)),
       ),
     );
+    List images = [
+      "g.png",
+      "i.png",
+      "f.png",
+      "a.png",
+    ];
+
     return Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -193,6 +204,47 @@ class _LoginScreenState extends State<LoginScreen> {
 
                                   ),
                                   SizedBox(height: 15),
+                                  RichText(
+                                    text: TextSpan(
+                                      text:"Sign in using one of the following methods",
+                                      style: TextStyle(
+                                        color: Colors.grey[500],
+                                        fontSize: 16,
+
+                                      ),
+
+                                    ),
+                                  ),
+                                  Wrap(
+                                    children: List<Widget>.generate(4,
+                                            (index) {
+                                          return Padding(
+                                            padding: EdgeInsets.all(10.0),
+                                            child: CircleAvatar(
+                                                radius: 30,
+                                                backgroundColor: Colors.grey[300],
+                                                child :  InkWell(
+                                                  onTap: (){
+                                                    if(index==0){
+                                                      final provider = Provider.of<GoogleSignInProvider>(context,listen : false);
+                                                      provider.googleLogin();
+
+                                                     // signInWithGoogle();
+                                                    }
+                                                  },
+                                                  child: CircleAvatar(
+                                                    radius: 25,
+                                                    backgroundImage: AssetImage(
+                                                      "assets/"+images[index],
+                                                    ) ,
+
+
+                                                  ),
+                                                )),
+                                          );
+                                        }
+                                    ),
+                                  )
 
 
                                 ]
@@ -207,7 +259,22 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 //login funciton
+  Future signInWithGoogle() async{
+    final GoogleSignInAccount? _googleUser = await GoogleSignIn().signIn();
 
+    final GoogleSignInAuthentication? _googleAuth = await _googleUser?.authentication;
+    final credential = GoogleAuthProvider.credential(accessToken: _googleAuth?.accessToken,
+      idToken: _googleAuth?.idToken,
+    );
+    try {
+      await _auth.signInWithCredential(credential);
+      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context)=>HomeScreen()), (route) => false);
+
+    }
+    on FirebaseAuthException catch (error){
+      print(error);
+    }
+  }
 void signIn(String email, String password) async {
 
      if(_formKey.currentState!.validate()){
@@ -223,11 +290,6 @@ void signIn(String email, String password) async {
         }).catchError((e) {
           Fluttertoast.showToast(msg: "Incorrect email/password or no internet connection");
         });
-
-
-
-
-
 
 }
   }
