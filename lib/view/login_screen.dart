@@ -40,6 +40,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     //email field
+    //email field
+
     final emailField = TextFormField(
         autofocus: false,
         controller: emailController,
