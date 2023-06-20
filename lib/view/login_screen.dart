@@ -1,16 +1,16 @@
 
-import 'package:app_sport/view/google_sign_in.dart';
-import 'package:app_sport/view/homescreen.dart';
-import 'package:app_sport/view/signup.dart';
-import 'package:app_sport/view/splash_view1.dart';
+import 'package:app_sportner2/screens/google_map.dart';
+import 'package:app_sportner2/screens/home_screen.dart';
+import 'package:app_sportner2/screens/registration_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart' ;
+import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:provider/provider.dart';
 
 import '../model/user_model.dart';
 import '../utils/global_colors.dart';
+import 'forgot_password_page.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -26,39 +26,92 @@ class _LoginScreenState extends State<LoginScreen> {
   // editing controller
   final TextEditingController emailController = new TextEditingController();
   final TextEditingController passwordController = new TextEditingController();
-
-  //firebase
-  final _auth = FirebaseAuth.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   User? user = FirebaseAuth.instance.currentUser;
   UserModel loggedInuser = UserModel();
   void initState() {
     // TODO: implement initState
     super.initState();
+  }
 
-     }
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
+
+  Future<UserCredential?> signInWithGoogle() async {
+    final GoogleSignInAccount? googleSignInAccount = await _googleSignIn.signIn();
+
+      final GoogleSignInAuthentication googleAuth = await googleSignInAccount!
+          .authentication;
+    String email = googleSignInAccount.email;
+    print("email: " + email);
+
+    // Vérifier si l'adresse e-mail est déjà enregistrée dans la galerie des utilisateurs
+    bool isEmailRegistered = await checkIfEmailIsRegistered(email);
+    if (isEmailRegistered) {
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final UserCredential userCredential = await _auth.signInWithCredential(
+          credential);
+
+      return userCredential;
+    }
+    else {
+      Fluttertoast.showToast(msg: "Sign up with your email before using this method");
+    }
+
+
+    }
+
+  void _handleGoogleSignIn() async {
+
+    try {
+
+      final UserCredential? userCredential = await signInWithGoogle();
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => HomeScreen()),
+      );
+    } catch (e) {
+      // Une erreur s'est produite lors de la connexion
+      print('Erreur lors de la connexion avec Google: $e');
+    }
+  }
+
+  Future<bool> checkIfEmailIsRegistered(String email) async {
+    // Référence à la collection "users" dans Firebase Firestore
+    CollectionReference usersCollection = FirebaseFirestore.instance.collection('users');
+
+    // Effectuez une requête pour récupérer les documents ayant un champ "email" correspondant à l'adresse e-mail donnée
+    QuerySnapshot querySnapshot = await usersCollection.where('email', isEqualTo: email).get();
+
+    // Vérifiez si des documents ont été trouvés avec l'adresse e-mail donnée
+    bool isRegistered = querySnapshot.docs.isNotEmpty;
+
+    return isRegistered;
+  }
   @override
   Widget build(BuildContext context) {
-    //email field
-    //email field
-
     final emailField = TextFormField(
         autofocus: false,
         controller: emailController,
         keyboardType: TextInputType.emailAddress,
 
-        //validator
+        //
         validator: (value){
           if(value!.isEmpty)
-            {
-              return ("Email is required to login");
+          {
+            return ("Email is required to login");
 
-            }
+          }
           if(!RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(value)){
             return("Enter a valid email");
 
           }
-            //reg expression for email validation
+          //reg expression for email validation
 
         },
         onSaved: (value) {
@@ -66,9 +119,9 @@ class _LoginScreenState extends State<LoginScreen> {
         },
         textInputAction: TextInputAction.next,
         decoration : InputDecoration(
-            prefixIcon: Icon(Icons.mail,color: GlobalColors.textColor,),
-            contentPadding: EdgeInsets.fromLTRB(20, 15, 20, 15),
-            hintText: "Email",
+          prefixIcon: Icon(Icons.mail,color: GlobalColors.textColor,),
+          contentPadding: EdgeInsets.fromLTRB(20, 15, 20, 15),
+          hintText: "Email",
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
             borderSide: BorderSide(
@@ -108,16 +161,16 @@ class _LoginScreenState extends State<LoginScreen> {
         },
         decoration : InputDecoration(
 
-            prefixIcon: Icon(Icons.lock,color: GlobalColors.textColor,),
-            contentPadding: EdgeInsets.fromLTRB(20, 15, 20, 15),
-            hintText: "Password",
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: BorderSide(
-                color: GlobalColors.textColor,
-              ),
-
+          prefixIcon: Icon(Icons.lock,color: GlobalColors.textColor,),
+          contentPadding: EdgeInsets.fromLTRB(20, 15, 20, 15),
+          hintText: "Password",
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15),
+            borderSide: BorderSide(
+              color: GlobalColors.textColor,
             ),
+
+          ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15.0),
             borderSide: BorderSide(
@@ -137,25 +190,23 @@ class _LoginScreenState extends State<LoginScreen> {
       child :MaterialButton(
         padding : EdgeInsets.fromLTRB(20, 15, 20, 15),
         minWidth: MediaQuery.of(context).size.width,
-        onPressed:(){ signIn(emailController.text,passwordController.text);
+        onPressed:(){
+          signIn(emailController.text,passwordController.text);
 
 
         },
-        child : Text("Se connecter", textAlign: TextAlign.center,style:TextStyle(fontSize: 20,color: Colors.white,fontWeight: FontWeight.bold)),
+        child : Text("Login", textAlign: TextAlign.center,style:TextStyle(fontSize: 20,color: Colors.white,fontWeight: FontWeight.bold)),
       ),
     );
     List images = [
       "g.png",
-      "i.png",
-      "f.png",
-      "a.png",
-    ];
 
+    ];
     return Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
-            backgroundColor: GlobalColors.mainColor,
-            elevation:0,
+          backgroundColor: GlobalColors.mainColor,
+          elevation:0,
 
         ),
         body: Center(
@@ -172,11 +223,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                   SizedBox(
                                       height :180,
                                       child : Image.asset(
-                                        "assets/sports.jpg",
+                                        "assets/sports.png",
                                         fit : BoxFit.contain,
                                       )
-                                ),
-                                  SizedBox(height : 35),
+                                  ),
+                                  SizedBox(height : 5),
                                   emailField,
                                   SizedBox(height : 25),
                                   passwordField,
@@ -186,13 +237,35 @@ class _LoginScreenState extends State<LoginScreen> {
                                   Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children:<Widget>[
-                                        Text("Vous n'avez pas de compte?"),
+                                        Text("Forgot your password ?"),
                                         GestureDetector(onTap:(){
-                                          Navigator.push(context,MaterialPageRoute(builder: (context)=>SignUp(
-
-                                          )));
+                                          Navigator.push(context,MaterialPageRoute(builder: (context)=>ForgotPasswordPage()
+                                          ));
                                         },
-                                          child: Text(" S'enregistrer",style: TextStyle(
+                                          child: Text(" Click here",style: TextStyle(
+                                            fontWeight:FontWeight.bold,
+                                            fontSize:15,
+                                            color : GlobalColors.mainColor,
+
+                                          ),
+                                          ),
+
+                                        )
+
+                                      ]
+
+                                  ),
+                                  SizedBox(height: 15),
+                                  Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children:<Widget>[
+                                        Text("You don't have an account ?"),
+                                        GestureDetector(onTap:(){
+                                          Navigator.push(context,MaterialPageRoute(builder: (context)=>RegistrationScreen()
+
+                                          ));
+                                        },
+                                          child: Text(" Sign up",style: TextStyle(
                                             fontWeight:FontWeight.bold,
                                             fontSize:15,
                                             color : GlobalColors.mainColor,
@@ -208,7 +281,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   SizedBox(height: 15),
                                   RichText(
                                     text: TextSpan(
-                                      text:"Sign in using one of the following methods",
+                                      text:"Sign in using Google method",
                                       style: TextStyle(
                                         color: Colors.grey[500],
                                         fontSize: 16,
@@ -218,21 +291,23 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   ),
                                   Wrap(
-                                    children: List<Widget>.generate(4,
+                                    children: List<Widget>.generate(1,
                                             (index) {
                                           return Padding(
                                             padding: EdgeInsets.all(10.0),
                                             child: CircleAvatar(
                                                 radius: 30,
-                                                backgroundColor: Colors.grey[300],
+                                                backgroundColor: Colors.white,
                                                 child :  InkWell(
-                                                  onTap: (){
-                                                    if(index==0){
-                                                      final provider = Provider.of<GoogleSignInProvider>(context,listen : false);
-                                                      provider.googleLogin();
+                                                  onTap: ()async {
+                                                      if(index==0)
+                                                        {
+                                                          _handleGoogleSignIn();
 
-                                                     // signInWithGoogle();
-                                                    }
+                                                         // Handle successful login
+
+                                                        }
+
                                                   },
                                                   child: CircleAvatar(
                                                     radius: 25,
@@ -260,44 +335,24 @@ class _LoginScreenState extends State<LoginScreen> {
         )
     );
   }
-//login funciton
-  Future signInWithGoogle() async{
-    final GoogleSignInAccount? _googleUser = await GoogleSignIn().signIn();
 
-    final GoogleSignInAuthentication? _googleAuth = await _googleUser?.authentication;
-    final credential = GoogleAuthProvider.credential(accessToken: _googleAuth?.accessToken,
-      idToken: _googleAuth?.idToken,
-    );
-    try {
-      await _auth.signInWithCredential(credential);
-      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context)=>HomeScreen()), (route) => false);
+  void signIn(String email, String password) async {
+
+    if(_formKey.currentState!.validate()){
+
+      await _auth.signInWithEmailAndPassword(email: email, password: password)
+          .then((uid) =>
+      {
+        Fluttertoast.showToast(msg: "Login successful"),
+
+        Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) =>HomeScreen() )),
+
+      }).catchError((e) {
+        Fluttertoast.showToast(msg: "Incorrect email/password or no internet connection");
+      });
 
     }
-    on FirebaseAuthException catch (error){
-      print(error);
-    }
-  }
-void signIn(String email, String password) async {
-
-     if(_formKey.currentState!.validate()){
-
-        await _auth.signInWithEmailAndPassword(email: email, password: password)
-            .then((uid) =>
-        {
-          Fluttertoast.showToast(msg: "Login successful"),
-
-          Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => SplashView())),
-
-        }).catchError((e) {
-          Fluttertoast.showToast(msg: "Incorrect email/password or no internet connection");
-        });
-
-}
   }
 
 }
-
-
-
-
